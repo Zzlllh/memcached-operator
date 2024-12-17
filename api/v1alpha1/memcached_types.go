@@ -30,12 +30,11 @@ type MemcachedSpec struct {
 
 	// Foo is an example field of Memcached. Edit memcached_types.go to remove/update
 	Foo string `json:"foo,omitempty"`
-}
 
-// MemcachedStatus defines the observed state of Memcached.
-type MemcachedStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=3
+	// +kubebuilder:validation:ExclusiveMaximum=false
+	Size int32 `json:"size,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -57,6 +56,10 @@ type MemcachedList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Memcached `json:"items"`
+}
+
+type MemcachedStatus struct {
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 func init() {
