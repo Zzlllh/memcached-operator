@@ -25,14 +25,19 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"time"
 
+	cachev1alpha1 "github.com/Zzlllh/memcached-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	_ "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	_ "sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	cachev1alpha1 "github.com/Zzlllh/memcached-operator/api/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	_ "sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // Definitions to manage status conditions
@@ -47,6 +52,23 @@ const (
 type MemcachedReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+}
+
+var ignoreDeploymentChanges = predicate.Funcs{
+	UpdateFunc: func(e event.UpdateEvent) bool {
+		// Ignore update events for Deployments
+		if _, ok := e.ObjectNew.(*appsv1.Deployment); ok {
+			return false
+		}
+		return true
+	},
+	GenericFunc: func(e event.GenericEvent) bool {
+		// Ignore generic events for Deployments
+		if _, ok := e.Object.(*appsv1.Deployment); ok {
+			return false
+		}
+		return true
+	},
 }
 
 // +kubebuilder:rbac:groups=cache.example.com,resources=memcacheds,verbs=get;list;watch;create;update;patch;delete
@@ -204,7 +226,7 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 func (r *MemcachedReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&cachev1alpha1.Memcached{}).
-		Owns(&appsv1.Deployment{}).
+		Owns(&appsv1.Deployment{}, builder.WithPredicates(ignoreDeploymentChanges)).
 		Named("memcached").
 		Complete(r)
 }

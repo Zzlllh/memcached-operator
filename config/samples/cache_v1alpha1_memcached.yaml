@@ -7,5 +7,5 @@ metadata:
   name: memcached-sample
 spec:
   # TODO(user): Add fields here
-  size: 1
+  size: 2
   foo: worked
